@@ -1,0 +1,29 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Patient Chat</title>
+    <link rel="stylesheet" href="{% static 'chat/css/styles.css' %}">
+</head>
+<body>
+    <h1>Patient Chat Application</h1>
+    <div id="chat-window">
+        <!-- Conversation history will be displayed here -->
+        {% for message in messages %}
+            <div class="message {{ message.sender }}">
+                <span>{{ message.timestamp }} - {{ message.sender }}:</span>
+                <p>{{ message.content }}</p>
+            </div>
+        {% empty %}
+            <p>No messages yet.</p>
+        {% endfor %}
+    </div>
+    <form method="post" action="">
+        {% csrf_token %}
+        <input type="text" name="message" placeholder="Type your message here..." autocomplete="off">
+        <button type="submit">Send</button>
+    </form>
+    <script src="{% static 'chat/js/chat.js' %}"></script>
+</body>
+</html>
