@@ -1,25 +1,23 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from patients.models import Patient
+from .models import Conversation, Message
 
 def chat_view(request):
     patient = Patient.objects.first()  # Retrieve the first (and only) patient
-    if patient is None:
-        # Handle the case where no patient exists
-        patient_name = "Guest"
-    else:
-        patient_name = f"{patient.first_name} {patient.last_name}"
+    conversation, created = Conversation.objects.get_or_create(patient=patient)
+    messages = conversation.messages.all()
 
-    messages = []  # Placeholder for messages
     if request.method == 'POST':
         user_message = request.POST.get('message')
-        # For now, we'll just echo the message back
+        Message.objects.create(conversation=conversation, sender='patient', content=user_message)
+        # Placeholder bot response
         bot_response = f"Echo: {user_message}"
-        messages.append({'sender': 'patient', 'content': user_message, 'timestamp': 'Now'})
-        messages.append({'sender': 'bot', 'content': bot_response, 'timestamp': 'Now'})
-
+        Message.objects.create(conversation=conversation, sender='bot', content=bot_response)
+        return redirect('chat')
+    
     context = {
         'messages': messages,
         'patient': patient,
-        'patient_name': patient_name,
+        # 'patient_name': patient_name,
     }
     return render(request, 'chat/chat.html', context)

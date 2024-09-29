@@ -16,10 +16,9 @@
     {% endif %}
     
     <div id="chat-window">
-        <!-- Conversation history will be displayed here -->
         {% for message in messages %}
             <div class="message {{ message.sender }}">
-                <span>{{ message.timestamp }} - {{ message.sender }}:</span>
+                <span>{{ message.timestamp|date:"Y-m-d H:i" }} - {{ message.sender }}:</span>
                 <p>{{ message.content }}</p>
             </div>
         {% empty %}
