@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     # ... apps ...
     'chat',
     'patients',
+    'ai_bot'
 ]
 
 MIDDLEWARE = [

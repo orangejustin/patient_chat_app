@@ -12,19 +12,77 @@ body {
     background-color: #f4f4f4;
 }
 
-h1 {
+/* Header styling */
+.header {
     text-align: center;
     margin-bottom: 20px;
 }
 
-#chat-window {
-    max-width: 600px;
+.header h1 {
+    font-size: 2em;
+}
+
+.main-container {
+    display: flex;
+    justify-content: center;
+    max-width: 1200px;
     margin: 0 auto;
-    background-color: white;
+    gap: 20px;
+}
+
+.chat-area {
+    flex: 0 0 60%;
+    max-width: 800px;
+}
+
+.side-info {
+    flex: 0 0 30%;
+    max-width: 350px;
+}
+
+.patient-info, .appointment-requests-container {
+    background-color: #ffffff;
+    padding: 15px;
     border: 1px solid #ddd;
     border-radius: 5px;
-    height: 400px;
+    font-size: 0.9em;
+    margin-bottom: 20px;
+}
+
+.patient-info h2, .appointment-requests-container h2 {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+}
+
+.patient-info p {
+    margin-bottom: 5px;
+}
+
+/* Chat container */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 500px; /* Increased height */
+}
+
+#chat-window {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 5px 5px 0 0; /* Rounded corners only on top */
+    overflow: hidden;
+}
+
+#chat-messages {
+    flex: 1;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     padding: 20px;
 }
 
@@ -32,39 +90,91 @@ h1 {
     margin-bottom: 15px;
     padding: 10px;
     border-radius: 5px;
+    max-width: 80%;
 }
 
 .message.patient {
     background-color: #e6f3ff;
+    align-self: flex-end;
     text-align: right;
 }
 
 .message.bot {
     background-color: #f0f0f0;
+    align-self: flex-start;
 }
 
-form {
-    max-width: 600px;
-    margin: 20px auto;
+.message span {
+    display: block;
+    font-size: 0.8em;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+/* Message form styling */
+.message-form {
     display: flex;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 5px 5px; /* Rounded corners only on bottom */
 }
 
-input[type="text"] {
+.message-form input[type="text"] {
     flex-grow: 1;
     padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px 0 0 5px;
+    border: none;
+    font-size: 1em;
 }
 
-button {
+.message-form button {
     padding: 10px 20px;
     background-color: #007bff;
     color: white;
     border: none;
-    border-radius: 0 5px 5px 0;
     cursor: pointer;
+    font-size: 1em;
 }
 
-button:hover {
+.message-form button:hover {
     background-color: #0056b3;
+}
+
+/* Appointment Requests Styling */
+.appointment-requests-container {
+    margin-top: 20px;
+}
+
+#appointment-requests {
+    background-color: #ffffff;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+#appointment-requests h2 {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+}
+
+#appointment-requests p {
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .main-container {
+        flex-direction: column;
+    }
+
+    .chat-area, .side-info {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
 }

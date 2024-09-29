@@ -25,10 +25,10 @@ class Patient(models.Model):
         return today.year - self.date_of_birth.year - ((today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day))
 
     def get_last_appointment_readable(self):
-        return self.last_appointment_datetime.strftime("%B %d, %Y at %I:%M %p")
+        return self.last_appointment_datetime.strftime("%m/%d/%Y %I:%M%p")
 
     def get_next_appointment_readable(self):
-        return self.next_appointment_datetime.strftime("%B %d, %Y at %I:%M %p")
+        return self.next_appointment_datetime.strftime("%m/%d/%Y %I:%M%p")
 
     def save(self, *args, **kwargs):
         if not self.last_appointment_datetime.tzinfo:

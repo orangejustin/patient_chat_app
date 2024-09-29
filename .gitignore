@@ -1,0 +1,9 @@
+# ignore all __pycache__ in the all the folders
+__pycache__/
+chat/__pycache__/
+
+
+# Other ignores can go here
+*.pyc
+*.pyo
+*.pyd

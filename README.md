@@ -11,6 +11,9 @@ from patients.models import Patient
 from django.utils import timezone
 from datetime import datetime
 
+# Delete all existing patients if needed
+# Patient.objects.all().delete()
+
 patient = Patient.objects.create(
     first_name='Michael',
     last_name='Davidson',
@@ -21,7 +24,7 @@ patient = Patient.objects.create(
     medication_regimen='Lisinopril 10mg once daily',
     last_appointment_datetime=timezone.make_aware(datetime(2024, 9, 15, 10, 0)),
     next_appointment_datetime=timezone.make_aware(datetime(2024, 10, 15, 10, 0)),
-    doctor_name='Dr. Smith'
+    doctor_name='John Smith'
 )
 
 

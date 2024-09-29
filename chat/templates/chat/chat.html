@@ -7,30 +7,59 @@
     <link rel="stylesheet" href="{% static 'chat/css/styles.css' %}">
 </head>
 <body>
-    <h1>Welcome, {{ patient.first_name }} {{ patient.last_name }}</h1>
-    <h1>Patient Chat Application</h1>
+    <header class="header">
+        <h1>Patient Chat Application</h1>
+    </header>
     
-    {% if patient %}
-        <p>Medical Condition: {{ patient.medical_condition }}</p>
-        <p>Next Appointment: {{ patient.next_appointment_datetime }}</p>
-    {% endif %}
-    
-    <div id="chat-window">
-        {% for message in messages %}
-            <div class="message {{ message.sender }}">
-                <span>{{ message.timestamp|date:"Y-m-d H:i" }} - {{ message.sender }}:</span>
-                <p>{{ message.content }}</p>
+    <div class="main-container">
+        <div class="chat-area">
+            <div class="chat-container">
+                <div id="chat-window">
+                    <div id="chat-messages">
+                        {% for message in messages %}
+                            <div class="message {{ message.sender }}" id="message-{{ forloop.counter }}">
+                                <span>{{ message.timestamp|date:"Y-m-d H:i" }} - {{ message.sender }}:</span>
+                                <p>{{ message.content }}</p>
+                            </div>
+                        {% empty %}
+                            <p>No messages yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
-        {% empty %}
-            <p>No messages yet.</p>
-        {% endfor %}
-    </div>
     
-    <form method="post" action="">
-        {% csrf_token %}
-        <input type="text" name="message" placeholder="Type your message here..." autocomplete="off">
-        <button type="submit">Send</button>
-    </form>
+            <form method="post" action="" class="message-form">
+                {% csrf_token %}
+                <input type="text" name="message" placeholder="Type your message here..." autocomplete="off" required>
+                <button type="submit">Send</button>
+            </form>
+        </div>
+        
+        <div class="side-info">
+            {% if patient %}
+                <div class="patient-info">
+                    <h2>Patient Information</h2>
+                    <p><strong>Name:</strong> {{ patient.first_name }} {{ patient.last_name }}</p>
+                    <p><strong>Age:</strong> {{ patient.get_age }} years old</p>
+                    <p><strong>Doctor:</strong> {{ patient.doctor_name }}</p>
+                    <p><strong>Medical Condition:</strong> {{ patient.medical_condition }}</p>
+                    <p><strong>Last Appointment:</strong> {{ patient.get_last_appointment_readable }}</p>
+                    <p><strong>Next Appointment:</strong> {{ patient.get_next_appointment_readable }}</p>
+                </div>
+            {% endif %}
+            
+            <div class="appointment-requests-container">
+                <div id="appointment-requests">
+                    <h2>Your Appointment Requests</h2>
+                    {% for request in appointment_requests %}
+                        <p>You requested to change your appointment from {{ request.current_time|date:"Y-m-d H:i" }} to {{ request.requested_time }}.</p>
+                    {% empty %}
+                        <p>No appointment requests.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
     
     <script src="{% static 'chat/js/chat.js' %}"></script>
 </body>
