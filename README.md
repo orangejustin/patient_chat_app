@@ -29,3 +29,7 @@ patient = Patient.objects.create(
 
 
 python manage.py runserver
+
+
+setup your openai api key
+export OPENAI_API_KEY="your-api-key"

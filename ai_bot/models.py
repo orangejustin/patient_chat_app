@@ -1,5 +1,7 @@
 """
 store requests
+
+ai_bot/models.py
 """
 
 from django.db import models
