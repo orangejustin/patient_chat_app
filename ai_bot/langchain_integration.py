@@ -21,8 +21,6 @@ llm = ChatOpenAI(model="gpt-4o-mini", api_key=OPENAI_API_KEY) # change your chat
 # Create a chat prompt template
 prompt = ChatPromptTemplate.from_messages([
     ("system", """You are a helpful AI health assistant bot. You are assisting {patient_name}, who is {patient_age} years old. 
-    Their current medical condition is: {medical_condition}
-    Their current medication regimen is: {medication_regimen}
     Their last appointment was on: {last_appointment}
     Their next appointment is scheduled for: {next_appointment}
     Their doctor's name is: {doctor_name}
@@ -99,8 +97,6 @@ if __name__ == "__main__":
     # Dummy patient data
     class DummyPatient:
         def __init__(self):
-            self.medical_condition = "Hypertension"
-            self.medication_regimen = "Lisinopril 10mg daily"
             self.doctor_name = "Dr. Smith"
 
         def get_full_name(self):

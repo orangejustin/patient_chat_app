@@ -1,5 +1,6 @@
 """
-knowledge graph
+knowledge graph using Neo4jGraph to add entities and relationships 
+and to query the graph using Cypher queries and LLMs from Langchain
 
 python ai_bot/knowledge_graph.py
 """
@@ -13,16 +14,29 @@ from langchain_community.graphs import Neo4jGraph
 from langchain.chains import GraphCypherQAChain
 from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
 
-from prompts import cypher_query_examples
+from ai_bot.prompts import cypher_query_examples
 
 SCHEMA = """
-        (:Patient)-[:TAKES]->(:Medication)
-        (:Patient)-[:HAS]->(:Symptoms)
-        (:Patient)-[:HAS]->(:Conditions)
-        (:Patient)-[:SCHEDULES]->(:Appointment)
-        (:Patient)-[:FOLLOWS]->(:Diet)
-        (:Medication)-[:HAS_DOSAGE]->(:Dosage)
-        (:Medication)-[:HAS_FREQUENCY]->(:Frequency)
+        (:Patient)
+            -[:TAKES]->(:Medication {name: String, dosage: String, frequency: String})
+            -[:HAS]->(:HealthIssue {description: String})  // Combines Symptoms and Conditions
+            -[:SCHEDULES]->(:Appointment {time: String})
+            -[:HAS_LAB_TEST]->(:LabTest {name: String})
+            -[:HAS_NOTE]->(:DoctorNote {content: String})
+            -[:HAS_VITAL]->(:Vital {
+                weight: String, 
+                height: String, 
+                blood_pressure: String, 
+                heart_rate: String, 
+                temperature: String
+            })
+            -[:HAS_ALLERGY]->(:Allergy {name: String})
+            -[:HAS_FAMILY_HISTORY]->(:FamilyHistory {description: String})
+            -[:HAS_LIFESTYLE_FACTOR]->(:LifestyleFactor {description: String})
+            -[:HAS_IMMUNIZATION]->(:Immunization {name: String, date: String})
+
+        (:Medication)-[:HAS_DOSAGE]->(:Dosage {value: String})
+        (:Medication)-[:HAS_FREQUENCY]->(:Frequency {value: String})
         """.strip()
 
 class KnowledgeGraph:
@@ -107,9 +121,6 @@ class KnowledgeGraph:
         result = self.graph.query(query, properties)
         return result[0]['e'] if result else None
 
-    def query(self, cypher_query, params=None):
-        return self.graph.query(cypher_query, params)
-
     def refresh_schema(self):
         self.graph.refresh_schema()
 
@@ -129,6 +140,16 @@ class KnowledgeGraph:
         result = self.graph.query(query, params)
         return result
 
+    def clear_graph(self):
+        """
+        Clear all nodes and relationships from the graph.
+        """
+        query = """
+        MATCH (n)
+        DETACH DELETE n
+        """
+        self.graph.query(query)
+        
 
 if __name__ == "__main__":
     kg = KnowledgeGraph()

@@ -9,8 +9,8 @@ __all__ = ['cypher_query_examples', 'entity_extraction_prompt']
 
 entity_extraction_prompt = """
 You are a helpful AI health assistant bot. Extract health-related entities from the user's input and format them as JSON. 
-Include fields for medications, dosage, frequency, symptoms, conditions, diet, and appointment_time. 
-For fields with multiple items, combine them into a single string using 'and' as a separator.
+Include fields for medications, dosage, frequency, family_history, health_issues, appointment_time, lab_tests, doctor_notes, weight, height, blood_pressure, heart_rate, temperature, allergies, lifestyle_factors, immunizations.
+For fields with multiple items, combine them into a single string using commas as separators.
 """.strip()
 
 
@@ -33,8 +33,8 @@ cypher_query_examples = [
         "query": "MATCH (p:Patient)-[:HAS]->(c:Conditions) RETURN c.name",
     },
     {
-        "question": "When is the patient's appointment scheduled?",
-        "query": "MATCH (p:Patient)-[:SCHEDULES]->(a:Appointment) RETURN a.time",
+        "question": "What new appointment time is the patient requesting?",
+        "query": "MATCH (p:Patient)-[:SCHEDULES]->(a:Appointment) RETURN a.time" 
     },
     {
         "question": "What are the dosages of the patient's medications?",
@@ -56,5 +56,17 @@ cypher_query_examples = [
         "question": "What is the patient's complete medication regimen, including dosages and frequencies?",
         "query": "MATCH (p:Patient)-[:TAKES]->(m:Medication)-[:HAS_DOSAGE]->(d:Dosage), (m)-[:HAS_FREQUENCY]->(f:Frequency) RETURN m.name, d.value, f.value",
     },
+    {
+        "question": "What new appointment time is the patient requesting?",
+        "query": """
+        MATCH (p:Patient)
+        OPTIONAL MATCH (p)-[:SCHEDULES]->(a:Appointment)
+        RETURN a.time AS requested_appointment_time, 
+               CASE WHEN a IS NOT NULL THEN true ELSE false END AS change_requested
+        """
+    }
 ]
 
+
+if __name__ == "__main__":
+    print(cypher_query_examples[:5])

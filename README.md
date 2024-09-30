@@ -7,6 +7,8 @@ python manage.py runserver
 
 python manage.py shell
 
+download from https://www.postgresql.org/download/
+
 from patients.models import Patient
 from django.utils import timezone
 from datetime import datetime

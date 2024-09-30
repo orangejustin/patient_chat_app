@@ -61,6 +61,56 @@
         </div>
     </div>
     
+    <button id="restartButton">Restart Conversation</button>
+
     <script src="{% static 'chat/js/chat.js' %}"></script>
+    <script>
+    document.getElementById('restartButton').addEventListener('click', function() {
+        fetch('{% url "restart_conversation" %}', {  // Use the URL name here
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Clear the chat messages
+                document.getElementById('chat-messages').innerHTML = '';
+                // Add the welcome message
+                addMessage(data.welcome_message.content, 'bot', data.welcome_message.timestamp);
+                // Clear appointment requests
+                document.getElementById('appointment-requests').innerHTML = '<h2>Your Appointment Requests</h2><p>No appointment requests.</p>';
+            }
+        });
+    });
+
+    function addMessage(content, sender, timestamp) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}`;
+        messageDiv.innerHTML = `
+            <span>${timestamp} - ${sender}:</span>
+            <p>${content}</p>
+        `;
+        document.getElementById('chat-messages').appendChild(messageDiv);
+    }
+
+    // Function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    </script>
 </body>
 </html>

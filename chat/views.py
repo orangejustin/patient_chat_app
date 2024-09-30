@@ -1,13 +1,19 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from patients.models import Patient 
 from .models import Conversation, Message
 from ai_bot.bot import generate_bot_response
 from ai_bot.models import AppointmentRequest
+from django.views.decorators.http import require_POST
 
 def chat_view(request):
     patient = Patient.objects.first()  # Retrieve the first (and only) patient
     conversation, created = Conversation.objects.get_or_create(patient=patient)
+    
+    if created:
+        # If this is a new conversation, add the welcome message
+        conversation.add_welcome_message()
+    
     messages = conversation.messages.all()
     appointment_requests = AppointmentRequest.objects.filter(patient=patient)
 
@@ -43,3 +49,19 @@ def chat_view(request):
         'appointment_requests': appointment_requests,
     }
     return render(request, 'chat/chat.html', context)
+
+@require_POST
+def restart_conversation(request):
+    print("Restart conversation view called")
+    patient = Patient.objects.first()  # Retrieve the first (and only) patient
+    conversation = Conversation.objects.get(patient=patient)
+    conversation.restart()
+    welcome_message = conversation.messages.first()  # Get the new welcome message
+    return JsonResponse({
+        'status': 'success',
+        'message': 'Conversation restarted',
+        'welcome_message': {
+            'content': welcome_message.content,
+            'timestamp': welcome_message.timestamp.strftime("%Y-%m-%d %H:%M")
+        }
+    })
