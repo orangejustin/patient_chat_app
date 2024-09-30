@@ -9,3 +9,5 @@ chat/__pycache__/
 *.pyd
 
 check.ipynb
+
+.env
