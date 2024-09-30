@@ -5,9 +5,20 @@ python ai_bot/bot.py
 """
 
 from ai_bot.langchain_integration import get_bot_response
+from ai_bot.entity_extraction import extract_entities
+from ai_bot.knowledge_graph import store_entities_in_neo4j
+
 
 def generate_bot_response(message, patient):
-    response = get_bot_response(message).content
+    # get the assistant's response
+    response = get_bot_response(message, patient).content
+
+    # extract the entities from the patient's message
+    entities = extract_entities(message)
+    if entities:
+        # store the entities in the neo4j database
+        store_entities_in_neo4j(entities)
+
     return response
 
 # import re
@@ -38,13 +49,14 @@ def generate_bot_response(message, patient):
 #         appointment_time = extract_appointment_request(message)
 #         if appointment_time:
 #             # Save the request or flag it for review
-#             AppointmentRequest.objects.create(
-#                 patient=patient,
-#                 current_time=patient.next_appointment_datetime,
-#                 requested_time=appointment_time
-#             )
+            # AppointmentRequest.objects.create(
+            #     patient=patient,
+            #     current_time=patient.next_appointment_datetime,
+            #     requested_time=appointment_time
+            # )
 #             return f"I will convey your request to Dr. {patient.doctor_name}."
 #         else:
 #             return "Let's discuss your health concerns."
 #     else:
 #         return "Please focus on health-related topics so I can assist you better."
+
