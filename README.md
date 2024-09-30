@@ -95,19 +95,19 @@ Create a `.env` file in the project root directory and add the following environ
 
 ```env
 # OpenAI API Key (or your chosen LLM provider)
-OPENAI_API_KEY=your_openai_api_key
+OPENAI_API_KEY=sk-...
 
 # Database Settings
-DATABASE_NAME=patient_chat_db
-DATABASE_USER=your_db_username
-DATABASE_PASSWORD=your_db_password
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
+DB_NAME=...
+DB_USER=...
+DB_PASSWORD=...
+DB_HOST=localhost # or your host
+DB_PORT=5432 # or your port number
 
-# Neo4j Settings 
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=your_neo4j_password
+# NEO4J Settings
+NEO4J_URI=neo4j+s://...io
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=3g...
 ```
 
 ### 5. Set Up the PostgreSQL Database

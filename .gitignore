@@ -2,6 +2,7 @@
 __pycache__/
 chat/__pycache__/
 
+.DS_Store
 
 # Other ignores can go here
 *.pyc
