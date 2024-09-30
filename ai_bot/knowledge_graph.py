@@ -1,8 +1,5 @@
 """
-We import Neo4jVector and OpenAIEmbeddings to work with vector embeddings.
-The add_document method allows us to add documents to the vector store.
-The similarity_search and hybrid_search methods enable us to perform vector-based retrieval.
-We maintain existing methods for adding entities and relationships to the Neo4j graph.
+knowledge graph
 
 python ai_bot/knowledge_graph.py
 """
@@ -10,9 +7,23 @@ python ai_bot/knowledge_graph.py
 import os
 from dotenv import load_dotenv
 from langchain_community.vectorstores import Neo4jVector
-from langchain_openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.docstore.document import Document
 from langchain_community.graphs import Neo4jGraph
+from langchain.chains import GraphCypherQAChain
+from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
+
+from prompts import cypher_query_examples
+
+SCHEMA = """
+        (:Patient)-[:TAKES]->(:Medication)
+        (:Patient)-[:HAS]->(:Symptoms)
+        (:Patient)-[:HAS]->(:Conditions)
+        (:Patient)-[:SCHEDULES]->(:Appointment)
+        (:Patient)-[:FOLLOWS]->(:Diet)
+        (:Medication)-[:HAS_DOSAGE]->(:Dosage)
+        (:Medication)-[:HAS_FREQUENCY]->(:Frequency)
+        """.strip()
 
 class KnowledgeGraph:
     def __init__(self):
@@ -21,18 +32,44 @@ class KnowledgeGraph:
         self.user = os.getenv('NEO4J_USER')
         self.password = os.getenv('NEO4J_PASSWORD')
 
-        self.embeddings = OpenAIEmbeddings(api_key=os.getenv('OPENAI_API_KEY'))
-        self.vector_store = Neo4jVector(
-            url=self.uri,
-            username=self.user,
-            password=self.password,
-            embedding=self.embeddings
-        )
+        # self.embeddings = OpenAIEmbeddings(api_key=os.getenv('OPENAI_API_KEY'))
+        # self.vector_store = Neo4jVector(
+        #     url=self.uri,
+        #     username=self.user,
+        #     password=self.password,
+        #     embedding=self.embeddings
+        # )
+
         self.graph = Neo4jGraph(url=self.uri, username=self.user, password=self.password)
+        
+        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+        # Create the example prompt template
+        example_prompt = PromptTemplate.from_template(
+            "User input: {question}\nCypher query: {query}"
+        )
+        
+        # Create the few-shot prompt template
+        self.prompt = FewShotPromptTemplate(
+            examples=cypher_query_examples[:5],
+            example_prompt=example_prompt,
+            prefix="You are a Neo4j expert. Given an input question, create a syntactically correct Cypher query to run.\n\nHere is the schema information\n{schema}.\n\nBelow are a number of examples of questions and their corresponding Cypher queries.",
+            suffix="User input: {question}\nCypher query: ",
+            input_variables=["question", "schema"]
+        )
+
+        # Initialize the QA chain with the new prompt
+        self.qa_chain = GraphCypherQAChain.from_llm(
+            graph=self.graph,
+            llm=self.llm,
+            verbose=True,
+            validate_cypher=True,
+            cypher_prompt=self.prompt,
+            allow_dangerous_requests=True
+        )
 
     def add_document(self, doc_id, text, metadata=None):
         # Create a document and add it to the vector store
-        from langchain.docstore.document import Document
         document = Document(page_content=text, metadata=metadata or {"id": doc_id})
         self.vector_store.add_documents([document])
 
@@ -47,19 +84,19 @@ class KnowledgeGraph:
         return results
 
     def add_entity(self, label, properties):
-        content = " ".join(f"{k}: {v}" for k, v in properties.items())
-        metadata = {"label": label, **properties}
-        document = Document(page_content=content, metadata=metadata)
-        self.vector_store.add_documents([document])
-
-    def add_relationship(self, label1, properties1, relation, label2, properties2):
         query = f"""
-        MATCH (a:{label1} {{{', '.join(f'{k}: ${k}1' for k in properties1.keys())}}})
-        MATCH (b:{label2} {{{', '.join(f'{k}: ${k}2' for k in properties2.keys())}}})
+        MERGE (e:{label} {{{', '.join(f'{k}: ${k}' for k in properties.keys())}}})
+        """
+        self.graph.query(query, properties)
+
+    def add_relationship(self, start_label, start_props, relation, end_label, end_props):
+        query = f"""
+        MATCH (a:{start_label} {{{', '.join(f'{k}: ${k}1' for k in start_props.keys())}}})
+        MATCH (b:{end_label} {{{', '.join(f'{k}: ${k}2' for k in end_props.keys())}}})
         MERGE (a)-[:{relation}]->(b)
         """
-        params = {f"{k}1": v for k, v in properties1.items()}
-        params.update({f"{k}2": v for k, v in properties2.items()})
+        params = {f"{k}1": v for k, v in start_props.items()}
+        params.update({f"{k}2": v for k, v in end_props.items()})
         self.graph.query(query, params)
 
     def get_entity_info(self, label, properties):
@@ -70,10 +107,31 @@ class KnowledgeGraph:
         result = self.graph.query(query, properties)
         return result[0]['e'] if result else None
 
+    def query(self, cypher_query, params=None):
+        return self.graph.query(cypher_query, params)
+
+    def refresh_schema(self):
+        self.graph.refresh_schema()
+
+    def get_schema(self):
+        return self.graph.schema
+
+    def ask(self, question):
+        """
+        Ask a question and get a response if we don't already have the query
+        """
+        return self.qa_chain.invoke({"query": question})
+    
+    def execute_query(self, query, params=None):
+        """
+        Execute a cypher query if we already have the query
+        """
+        result = self.graph.query(query, params)
+        return result
+
+
 if __name__ == "__main__":
     kg = KnowledgeGraph()
-    medication_info = kg.get_entity_info('Medication', {'name': 'Lisinopril'})
-    if medication_info:
-        print("Graph query result:", medication_info)
-    else:
-        print("No medication found in graph database")
+    kg.refresh_schema()
+    print("Graph Schema:", kg.get_schema())
+    

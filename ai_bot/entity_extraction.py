@@ -16,6 +16,7 @@ from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from knowledge_graph import KnowledgeGraph
+from prompts import entity_extraction_prompt
 
 # Load OpenAI API key from environment variable
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
@@ -36,9 +37,10 @@ class HealthEntity(BaseModel):
 # Create a JSON output parser with the Pydantic model
 json_parser = JsonOutputParser(pydantic_object=HealthEntity)
 
+
 # Create a chat prompt template
 prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful AI health assistant bot. Extract health-related entities from the user's input and format them as JSON. Include fields for medications (as a single string, separating multiple medications with 'and'), dosage, frequency, symptoms, conditions, diet, and appointment_time."),
+    ("system", entity_extraction_prompt),
     ("human", "{input}")
 ])
 
@@ -67,100 +69,71 @@ def extract_entities(user_input: str) -> dict:
         print(f"An error occurred: {str(e)}")
         return {}
 
-def store_entities_as_documents(entities: Dict[str, Any]):
+def store_entities_as_documents(entities: Dict[str, Any], patient_name: str):
     kg = KnowledgeGraph()
-    patient_name = "Michael" # will change to the variable as input patient object
 
-    # Convert entities to documents
-    documents = []
+    # Add patient node
+    kg.add_entity('Patient', {'name': patient_name})
 
-    # Medications
-    if entities['medications']:
-        content = f"{patient_name}'s medications: {entities['medications']}"
-        if entities['dosage']:
-            content += f", dosage: {entities['dosage']}"
-        if entities['frequency']:
-            content += f", frequency: {entities['frequency']}"
-        documents.append({
-            "id": f"{patient_name}-medications",
-            "text": content,
-            "metadata": {"type": "medications", "patient": patient_name}
-        })
+    for entity_type, value in entities.items():
+        if value:
+            if entity_type == 'medications':
+                medications = value.split(' and ')
+                for medication in medications:
+                    kg.add_entity('Medication', {'name': medication})
+                    kg.add_relationship('Patient', {'name': patient_name}, 'TAKES', 'Medication', {'name': medication})
+                    
+                    if entities['dosage']:
+                        kg.add_entity('Dosage', {'value': entities['dosage']})
+                        kg.add_relationship('Medication', {'name': medication}, 'HAS_DOSAGE', 'Dosage', {'value': entities['dosage']})
+                    
+                    if entities['frequency']:
+                        kg.add_entity('Frequency', {'value': entities['frequency']})
+                        kg.add_relationship('Medication', {'name': medication}, 'HAS_FREQUENCY', 'Frequency', {'value': entities['frequency']})
+            
+            elif entity_type in ['symptoms', 'conditions']:
+                kg.add_entity(entity_type.capitalize(), {'name': value})
+                kg.add_relationship('Patient', {'name': patient_name}, 'HAS', entity_type.capitalize(), {'name': value})
+            
+            elif entity_type == 'diet':
+                kg.add_entity('Diet', {'description': value})
+                kg.add_relationship('Patient', {'name': patient_name}, 'FOLLOWS', 'Diet', {'description': value})
+            
+            elif entity_type == 'appointment_time':
+                kg.add_entity('Appointment', {'time': value})
+                kg.add_relationship('Patient', {'name': patient_name}, 'SCHEDULES', 'Appointment', {'time': value})
 
-    # Symptoms
-    if entities['symptoms']:
-        content = f"{patient_name} reported symptom(s): {entities['symptoms']}"
-        documents.append({
-            "id": f"{patient_name}-symptoms",
-            "text": content,
-            "metadata": {"type": "symptoms", "patient": patient_name}
-        })
+    # Refresh the schema after adding new entities and relationships
+    kg.refresh_schema()
 
-    # Conditions
-    if entities['conditions']:
-        content = f"{patient_name} has condition(s): {entities['conditions']}"
-        documents.append({
-            "id": f"{patient_name}-conditions",
-            "text": content,
-            "metadata": {"type": "conditions", "patient": patient_name}
-        })
-
-    # Diet
-    if entities['diet']:
-        content = f"{patient_name}'s diet information: {entities['diet']}"
-        documents.append({
-            "id": f"{patient_name}-diet",
-            "text": content,
-            "metadata": {"type": "diet", "patient": patient_name}
-        })
-
-    # Appointment Time
-    if entities['appointment_time']:
-        content = f"{patient_name} requested appointment time: {entities['appointment_time']}"
-        documents.append({
-            "id": f"{patient_name}-appointment-{entities['appointment_time']}",
-            "text": content,
-            "metadata": {"type": "appointment", "patient": patient_name}
-        })
-
-    # Add documents to vector store
-    for doc in documents:
-        kg.add_document(doc_id=doc["id"], text=doc["text"], metadata=doc["metadata"])
 
 
 
 if __name__ == "__main__":
     print("Health Assistant Bot: Hello! How can I assist you with your health-related questions today?")
 
-    # user_input = "I am taking lisinopril 2.5 mg once a day"
-    # user_input = "I have a headache and I am taking ibuprofen"
-    # user_input = "I am on a low-fat diet" 
-    # user_input = "I have a headache and I am taking ibuprofen"
-    # user_input = "i am taking lisinopril and ibuprofen twice a day"
-    # user_input = "Can we reschedule the appointment to next Friday at 3 PM?"
+    kg = KnowledgeGraph()
+    patient_name = "Michael Davidson"  # This should be set dynamically based on the current patient
 
     while True:
         user_input = input("You: ")
         if user_input.lower() == 'exit':
             break
-        response = extract_entities(user_input)
         
-        # Check if any entities were extracted
-        if any(value is not None for value in response.values()):
-            print(f"Health Assistant Bot: {response}")
-            store_entities_as_documents(response)
-            print("Health Assistant Bot: I've stored that information in your health record.")
+        if user_input.lower().startswith('query:'):
+            # If the input starts with 'query:', use it as a direct question for the graph
+            question = user_input[6:].strip()
+            response = kg.ask(question)
+            print(f"Health Assistant Bot: {response['result']}")
         else:
-            print("Health Assistant Bot: I couldn't extract any health-related information from that. Can you provide more specific health-related details?")
-    # while True:
-    #     user_input = input("You: ")
-    #     if user_input.lower() == 'exit':
-    #         break
-    #     response = extract_entities(user_input)
-    #     if response:
-    #         print(f"Health Assistant Bot: {response}")
-    #     else:
-    #         print("Health Assistant Bot: I couldn't extract any health-related information from that. Can you provide more specific health-related details?")
-
+            # Otherwise, process it as usual for entity extraction
+            response = extract_entities(user_input)
+            
+            if any(value is not None for value in response.values()):
+                print(f"Health Assistant Bot: Extracted information: {response}")
+                store_entities_as_documents(response, patient_name)
+                print("Health Assistant Bot: I've stored that information in your health record.")
+            else:
+                print("Health Assistant Bot: I couldn't extract any health-related information from that. Can you provide more specific health-related details?")
 
 
