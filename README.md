@@ -120,14 +120,16 @@ NEO4J_PASSWORD=3g...
 - **Update Database Settings:**
   - Ensure your `.env` file contains the correct database credentials.
 
-### 6. Set Up Neo4j Graph Database (Optional)
+### 6. Set Up Neo4j Graph Database 
 
 - **Install Neo4j:**
   - Download and install Neo4j from [the official website](https://neo4j.com/docs/operations-manual/current/installation/).
-- **Start Neo4j:**
-  - Start the Neo4j server and ensure it's running on `bolt://localhost:7687`.
+- **Create a New Instance Using AuraDB Free:**
+  - Sign up for a free account at [Neo4j Aura](https://neo4j.com/cloud/aura/).
+  - Create a new database instance and follow the setup instructions provided.
+  - Validate that your Aura instance is available by visiting [Neo4j Console](https://console.neo4j.io).
 - **Update Neo4j Settings:**
-  - Ensure your `.env` file contains the correct Neo4j credentials.
+  - Ensure your `.env` file contains the correct Neo4j credentials, including the AuraDB connection URI and credentials.
 
 ### 7. Create a Patient Profile
 

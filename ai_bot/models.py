@@ -7,6 +7,7 @@ ai_bot/models.py
 from django.db import models
 from patients.models import Patient
 
+
 class AppointmentRequest(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
     current_time = models.DateTimeField()
@@ -15,3 +16,7 @@ class AppointmentRequest(models.Model):
 
     def __str__(self):
         return f"{self.patient} requested appointment change to {self.requested_time}"
+
+    @classmethod
+    def restart(cls, patient):
+        cls.objects.filter(patient=patient).delete()

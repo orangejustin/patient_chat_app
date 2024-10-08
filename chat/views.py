@@ -54,8 +54,12 @@ def chat_view(request):
 def restart_conversation(request):
     print("Restart conversation view called")
     patient = Patient.objects.first()  # Retrieve the first (and only) patient
+    
+    # restart the conversation and appointment request
     conversation = Conversation.objects.get(patient=patient)
     conversation.restart()
+    AppointmentRequest.restart(patient)
+
     welcome_message = conversation.messages.first()  # Get the new welcome message
     return JsonResponse({
         'status': 'success',
