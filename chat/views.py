@@ -27,7 +27,7 @@ def chat_view(request):
         # Check if a new appointment request was made
         new_appointment_request = None
         latest_request = AppointmentRequest.objects.filter(patient=patient).last()
-        if latest_request:
+        if latest_request and bot_response.startswith("I will convey your request to Dr."):
             new_appointment_request = {
                 'current_time': latest_request.current_time.strftime("%Y-%m-%d %H:%M"),
                 'requested_time': latest_request.requested_time
