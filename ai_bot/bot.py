@@ -1,36 +1,32 @@
-"""
-a basic bot
+# ai_bot/bot.py
 
-python ai_bot/bot.py
-"""
-
-from ai_bot.langchain_integration import get_bot_response
-from ai_bot.entity_extraction import extract_entities, store_entities_as_documents
-# from ai_bot.knowledge_graph import store_entities_in_neo4j
-from ai_bot.models import AppointmentRequest
+from ai_bot.langchain_integration import get_bot_response, get_bot_response_based_on_entities
 from django.utils import timezone
+from collections import defaultdict
 
-def generate_bot_response(message, patient):
-    # Get the assistant's response
-    response = get_bot_response(message, patient).content
+from ai_bot.agent import agent_app, AgentState  # Import the agent and state
 
-    # Extract the entities from the patient's message
-    entities = extract_entities(message)
-    
-    if entities:
-        # Store the entities in the neo4j database
-        store_entities_as_documents(entities, patient.get_full_name())
+# Session state storage (use a more robust storage in production, e.g., Redis)
+session_states = defaultdict(lambda: None)
 
-        # Check if an appointment time was requested
-        appointment_time = entities.get('appointment_time')
-        if appointment_time:
-            # Create an AppointmentRequest
-            AppointmentRequest.objects.create(
-                patient=patient,
-                current_time=patient.next_appointment_datetime,
-                requested_time=appointment_time
-            )
-            return f"I will convey your request to Dr. {patient.doctor_name}."
-    #         response += f"\n\nI've noted your request for an appointment change to {appointment_time}. I will convey this to Dr. {patient.doctor_name}."
+def generate_bot_response(message, patient, session_id="default"):
+    # Retrieve or initialize the state for the session
+    state = session_states.get(session_id)
+    if not state:
+        state = AgentState(
+            input=message,
+            patient=patient,
+            session_id=session_id
+        )
+        session_states[session_id] = state
+    else:
+        state.input = message  # Update the input with the user's message
 
-    return response
+    # Run the agent synchronously
+    result = agent_app.invoke(state)
+
+    if result.get("follow_up_question"):
+        return result["follow_up_question"]
+    else:
+        del session_states[session_id]
+        return result["response"]

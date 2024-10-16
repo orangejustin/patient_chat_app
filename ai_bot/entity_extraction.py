@@ -22,7 +22,7 @@ from ai_bot.prompts import entity_extraction_prompt
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 # Initialize the LLM
-llm = ChatOpenAI(model="gpt-3.5-turbo", api_key=OPENAI_API_KEY)
+llm = ChatOpenAI(model="gpt-4o-mini", api_key=OPENAI_API_KEY)
 
 # Define a Pydantic model for the output
 class HealthEntity(BaseModel):

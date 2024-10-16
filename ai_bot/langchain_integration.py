@@ -82,16 +82,38 @@ def get_bot_response(user_input: str, patient, session_id: str = "default") -> s
         "last_appointment": patient.get_last_appointment_readable(),
         "next_appointment": patient.get_next_appointment_readable(),
         "doctor_name": patient.doctor_name,
-        "input": user_input
+        "input": user_input,
     }
     response = runnable_chain.invoke(
         prompt_variables,
         config={"configurable": {"session_id": session_id}}
     )
-    return response
+    return response.content
 
-
-
+def get_bot_response_based_on_entities(entities_input, patient, session_id: str = "default"):
+    # Prepare the information obtained from entities
+    entity_info = "The patient has provided the following information: " + entities_input
+    
+    # Prepare the prompt for the AI
+    user_input = f"{entity_info}\nPlease reply in under few lines regarding the specific information. It could be an analysis of the usage/frequency of a medication, or about the patient's health condition."
+    
+    # Prepare the prompt variables
+    prompt_variables = {
+        "patient_name": patient.get_full_name(),
+        "patient_age": patient.get_age(),
+        "last_appointment": patient.get_last_appointment_readable(),
+        "next_appointment": patient.get_next_appointment_readable(),
+        "doctor_name": patient.doctor_name,
+        "input": user_input
+    }
+    
+    # Use runnable_chain to get the AI response
+    response = runnable_chain.invoke(
+        prompt_variables,
+        config={"configurable": {"session_id": session_id}}
+    )
+    
+    return response.content
 
 if __name__ == "__main__":
     print("Welcome to the AI Bot. Type 'exit' to stop.")

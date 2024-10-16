@@ -4,13 +4,14 @@ prompts, query examples
 refer to https://python.langchain.com/docs/how_to/graph_prompting/
 """
 
-__all__ = ['cypher_query_examples', 'entity_extraction_prompt']
+__all__ = ['cypher_query_examples', 'entity_extraction_prompt', 'QUESTIONS']
 
 
 entity_extraction_prompt = """
-You are a helpful AI health assistant bot. Extract health-related entities from the user's input and format them as JSON. 
+You are a helpful AI health assistant bot. Extract health-related entities from the user's input. 
 Include fields for medications, dosage, frequency, family_history, health_issues, appointment_time, lab_tests, doctor_notes, weight, height, blood_pressure, heart_rate, temperature, allergies, lifestyle_factors, immunizations.
-For fields with multiple items, combine them into a single string using commas as separators.
+For fields with multiple items, combine them into a single string using commas as separators. 
+Do not infer any information from the user's input. Lowercase all the fields.
 """.strip()
 
 
@@ -67,6 +68,30 @@ cypher_query_examples = [
     }
 ]
 
+# Define the QUESTIONS dictionary with follow-ups
+QUESTIONS = {
+    "medications": {
+        "question": "Can you please list all the medications you are currently taking?",
+        "follow_ups": ["dosage", "frequency"]
+    },
+    "dosage": {
+        "question": "What is the dosage for each of your medications?",
+        "follow_ups": []
+    },
+    "frequency": {
+        "question": "How often do you take each medication?",
+        "follow_ups": []
+    },
+    "family_history": {
+        "question": "Do you have any family members with a history of medical conditions?",
+        "follow_ups": []
+    },
+    "health_issues": {
+        "question": "What current health problems or symptoms are you experiencing?",
+        "follow_ups": []
+    },
+    # ... add other primary questions
+}
 
 if __name__ == "__main__":
     print(cypher_query_examples[:5])
