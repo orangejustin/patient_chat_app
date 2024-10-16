@@ -1,6 +1,66 @@
 # Patient Chat Application
 
-Welcome to the Patient Chat Application! This project is a Django-based web application that allows patients to interact with an AI health assistant. The assistant provides personalized health-related information, manages patient data, and utilizes advanced AI capabilities such as entity extraction and knowledge graph integration.
+This Django-based web application allows patients to interact with an AI health assistant, providing personalized health information and managing patient data.
+
+## Key Features
+
+1. **Medication Management**
+2. **Appointment Scheduling**
+3. **General Health Inquiries**
+
+## User Interface
+
+![User Interface](static/interface.png)
+
+The interface includes a chat window, message input field, and send button.
+
+## Use Cases
+
+### 1. Medication Query
+
+The AI assistant can gather information about medications, including dosage and frequency.
+
+Example:
+```
+Patient: I'm taking ibuprofen for my fever.
+Bot: What is the dosage for each of your medications?
+Patient: ibuprofen, 200mg
+Bot: How often do you take each medication?
+Patient: ibuprofen, every 6 hours.
+Bot: [Provides information about the medication and usage]
+```
+
+### 2. Appointment Changes
+
+Patients can request appointment changes, which the AI will forward to the doctor.
+
+Example:
+```
+Patient: I want to change the appointment to next Monday
+Bot: You requested to change your appointment from 2024-10-15 10:00 to next Monday. 
+     I will convey your request to Dr. John Smith.
+```
+
+### 3. General Health Inquiries
+
+The AI can provide general health advice based on patient queries.
+
+Example:
+```
+Patient: I twisted my ankle, what should I do?
+Bot: [Provides steps to manage a twisted ankle, including rest, ice, compression, 
+     elevation, and when to see a doctor]
+```
+
+## Implementation Details
+
+The application uses:
+- Django backend
+- AI integration for natural language processing
+- Knowledge graph for storing and retrieving patient information
+- Entity extraction for understanding user inputs
+
+For full setup and installation instructions, please refer to the Setup section below.
 
 ---
 
@@ -20,10 +80,13 @@ Welcome to the Patient Chat Application! This project is a Django-based web appl
   - [Run the Application](#run-the-application)
 - [Implementation Details](#implementation-details)
   - [Backend](#backend)
+  - [Frontend](#frontend)
   - [AI Integration](#ai-integration)
   - [Database Schema](#database-schema)
   - [Entity Extraction](#entity-extraction)
   - [Knowledge Graph Integration](#knowledge-graph-integration)
+  - [Agent System](#agent-system)
+- [User Interface](#user-interface)
 - [Future Enhancements](#future-enhancements)
 - [Contributing](#contributing)
 - [License](#license)
@@ -198,6 +261,10 @@ The backend is built with Django, providing robust support for web applications 
   - `patients`: Manages patient data and models.
   - `ai_bot`: Contains AI-related logic, including language model integration and knowledge graph interactions.
 
+### Frontend
+
+The frontend of the application is built using Django Templates, providing a seamless integration with the Django backend. The user interface is designed to be intuitive and user-friendly, allowing patients to easily interact with the AI health assistant.
+
 ### AI Integration
 
 - **Langchain and Langgraph:**
@@ -257,16 +324,49 @@ Utilized for the knowledge graph, enabling advanced data retrieval and relations
 - **Natural Language Interface:**
   - Leverages Langchain's `GraphCypherQAChain` to allow natural language queries against the Neo4j graph.
 
+### Agent System
+
+The application now includes an advanced agent system implemented in `ai_bot/agent.py`. This system enhances the AI's ability to process user inputs, manage conversation flow, and interact with the knowledge graph.
+
+Key features of the agent system include:
+
+- **State Management:** Uses a `StateGraph` to manage the conversation state and flow.
+- **Entity Extraction:** Extracts relevant entities from user input.
+- **Dynamic Follow-up Questions:** Asks follow-up questions when necessary information is missing.
+- **Knowledge Graph Integration:** Interacts with the Neo4j knowledge graph to store and retrieve patient information.
+- **Conditional Logic:** Uses conditional edges to determine the next step in the conversation flow.
+
+The agent system follows these main steps:
+1. Extract entities from user input
+2. Check for missing required entities
+3. Ask follow-up questions if needed
+4. Generate a response based on the available information
+
+This system allows for more dynamic and context-aware conversations, improving the overall user experience.
+
+---
+
+## User Interface
+
+For the simplicity of the project, the user interface is minimalistic and only contains the chat window and input field. User can choose to delete the chat history by clicking the `Restart` button.
+
+![User Interface](static/interface.png)
+
+Key elements of the interface include:
+- A chat window displaying the conversation history
+- An input field for patients to type their messages
+- A send button to submit messages
+- A `Restart` button to delete the chat history
+This interface provides a straightforward and accessible way for patients to communicate with the AI health assistant, ask questions, and receive personalized health information.
+
 ---
 
 ## Future Enhancements
 
-- **Multi-Agent System:**
-  - Implement coordination between multiple models to handle different tasks within the chat using Langgraph.
-- **Live Conversation Summaries:**
-  - Detect and output live conversation summaries and medical insights from ongoing interactions.
-- **Cloud Deployment:**
-  - Adapt the application for deployment on cloud platforms.
+- **Agent System Improvements:**
+  - Expand the agent's capabilities to handle more complex medical scenarios.
+  - Implement more sophisticated decision-making algorithms within the agent system.
+  - Enhance the integration between the agent system and other components of the application.
 
 ---
 
@@ -337,8 +437,3 @@ After any changes to the models, run:
 python manage.py makemigrations
 python manage.py migrate
 ```
-
-## Contact
-
-For support or inquiries, please contact [email](zechengl@andrew.cmu.edu).
-
