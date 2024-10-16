@@ -72,14 +72,14 @@ cypher_query_examples = [
 QUESTIONS = {
     "medications": {
         "question": "Can you please list all the medications you are currently taking?",
-        "follow_ups": ["dosage", "frequency"]
+        "follow_ups": ["dosages", "frequencies"]
     },
-    "dosage": {
-        "question": "What is the dosage for each of your medications?",
+    "dosages": {
+        "question": "What is the dosage for each of your medications? (e.g. lisinopril, 10mg)",
         "follow_ups": []
     },
-    "frequency": {
-        "question": "How often do you take each medication?",
+    "frequencies": {
+        "question": "How often do you take each medication? (e.g. lisinopril, twice a day)",
         "follow_ups": []
     },
     "family_history": {

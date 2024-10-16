@@ -28,5 +28,5 @@ def generate_bot_response(message, patient, session_id="default"):
     if result.get("follow_up_question"):
         return result["follow_up_question"]
     else:
-        del session_states[session_id]
+        # del session_states[session_id]
         return result["response"]

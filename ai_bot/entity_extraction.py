@@ -28,7 +28,7 @@ llm = ChatOpenAI(model="gpt-4o-mini", api_key=OPENAI_API_KEY)
 class HealthEntity(BaseModel):
     medications: Optional[str] = Field(None, description="Names of medications, separated by commas if multiple")
     dosage: Optional[str] = Field(None, description="Dosage of the medication(s)")
-    frequency: Optional[str] = Field(None, description="Frequency of taking the medication(s)")
+    frequency: Optional[str] = Field(None, description="Frequency/number of times per day of taking the medication(s)")
     family_history: Optional[str] = Field(None, description="Relevant family (like parents, siblings) medical history")
     health_issues: Optional[str] = Field(None, description="Current health problems, including both diagnosed conditions and reported symptoms of only the patient not family history")
     appointment_time: Optional[str] = Field(None, description="Requested appointment time")

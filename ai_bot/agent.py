@@ -25,29 +25,34 @@ class AgentState(BaseModel):
     missing_entities: List[str] = Field(default_factory=list)
     follow_up_question: Optional[str] = None
     response: Optional[str] = None
-    patient: Optional[object] = None  # Replace with your patient model
+    patient: Optional[object] = None  # Replace with the patient model
     session_id: Optional[str] = None
     current_question: Optional[str] = None  # Track the current follow-up question
 
 # Step 1: Extract entities
 def extract_entities_step(state: AgentState):
     entities = extract_entities(state.input)
-    # print(entities)
+    # entities[state.current_question] = extracted_value or state.input
     if state.current_question:
-        # Map the user's response to the entity being asked
-        # state.entities[state.current_question] = entities.get(state.current_question, state.input)
-        state.entities = entities
+        extracted_value = entities.get(state.current_question)
+        state.entities[state.current_question] = extracted_value or state.input
     else:
-        # Update entities with the newly extracted ones
         state.entities.update(entities)
 
-    # Clear current_question after processing
     state.current_question = None
 
-    if state.entities:
-        # Store the entities in the Neo4j database immediately
-        store_entities_as_documents(state.entities, state.patient.get_full_name())
-
+    if entities:
+        patient_properties = {'name': state.patient.get_full_name()}
+        patient_properties['store_medication'] = entities.get("medications") is not None
+        patient_properties['store_appointment'] = entities.get("appointment_time") is not None
+        # Use MERGE to avoid duplicates and update properties
+        query = f"""
+        MERGE (p:Patient {{name: "{state.patient.get_full_name()}"}})
+        SET p.store_medication = {patient_properties['store_medication']}, p.store_appointment = {patient_properties['store_appointment']}
+        """
+        kg.graph.query(query)
+        store_entities_as_documents(entities, state.patient.get_full_name())
+    
     return {"entities": state.entities}
 
 # Step 2: Check for missing entities
@@ -78,10 +83,10 @@ def check_missing_entities_step(state: AgentState):
         except (ClientError, Neo4jError) as e: # UnknownLabelWarning is fine as it's not yet stored
             pass
 
-        if not state.entities.get("dosage") and dosage_count == 0:
-            required_entities.append("dosage")
-        if not state.entities.get("frequency") and frequency_count == 0:
-            required_entities.append("frequency")
+        if not state.entities.get("dosages") and dosage_count == 0:
+            required_entities.append("dosages")
+        if not state.entities.get("frequencies") and frequency_count == 0:
+            required_entities.append("frequencies")
 
     state.missing_entities = required_entities
     return {"missing_entities": state.missing_entities}
@@ -116,31 +121,44 @@ def generate_response_step(state: AgentState):
     OPTIONAL MATCH (p)-[:HAS_LIFESTYLE_FACTOR]->(lifestyle_factor:LifestyleFactor)
     OPTIONAL MATCH (p)-[:HAS_IMMUNIZATION]->(immunization:Immunization)
     RETURN 
-        medication AS medications,
-        dosage AS dosages,
-        frequency AS frequencies,
-        health_issue AS health_issues,
-        appointment AS appointments,
-        lab_test AS lab_tests,
-        doctor_note AS doctor_notes,
-        vital AS vitals,
-        allergy AS allergies,
-        family_history AS family_histories,
-        lifestyle_factor AS lifestyle_factors,
-        immunization AS immunizations
+        CASE WHEN count(medication) > 0 THEN collect(DISTINCT medication.name) ELSE null END AS medications,
+        CASE WHEN count(dosage) > 0 THEN collect(DISTINCT dosage.value) ELSE null END AS dosages,
+        CASE WHEN count(frequency) > 0 THEN collect(DISTINCT frequency.value) ELSE null END AS frequencies,
+        CASE WHEN count(health_issue) > 0 THEN collect(DISTINCT health_issue.description) ELSE null END AS health_issues,
+        CASE WHEN count(appointment) > 0 THEN collect(DISTINCT appointment.time) ELSE null END AS appointment_time,
+        CASE WHEN count(lab_test) > 0 THEN collect(DISTINCT lab_test.name) ELSE null END AS lab_tests,
+        CASE WHEN count(doctor_note) > 0 THEN collect(DISTINCT doctor_note.content) ELSE null END AS doctor_notes,
+        CASE WHEN count(vital) > 0 THEN collect(DISTINCT vital.weight) ELSE null END AS weight,
+        CASE WHEN count(vital) > 0 THEN collect(DISTINCT vital.height) ELSE null END AS height,
+        CASE WHEN count(vital) > 0 THEN collect(DISTINCT vital.blood_pressure) ELSE null END AS blood_pressure,
+        CASE WHEN count(vital) > 0 THEN collect(DISTINCT vital.heart_rate) ELSE null END AS heart_rate,
+        CASE WHEN count(vital) > 0 THEN collect(DISTINCT vital.temperature) ELSE null END AS temperature,
+        CASE WHEN count(allergy) > 0 THEN collect(DISTINCT allergy.name) ELSE null END AS allergies,
+        CASE WHEN count(family_history) > 0 THEN collect(DISTINCT family_history.condition) ELSE null END AS family_history,
+        CASE WHEN count(lifestyle_factor) > 0 THEN collect(DISTINCT lifestyle_factor.description) ELSE null END AS lifestyle_factors,
+        CASE WHEN count(immunization) > 0 THEN collect(DISTINCT immunization.name) ELSE null END AS immunizations
     """
+
+
+    check_query = f"""
+    MATCH (n:Patient {{name: "{patient_name}"}})
+    WHERE n.store_appointment IS NOT NULL OR n.store_medication IS NOT NULL
+    RETURN n.name AS name, n.store_appointment AS store_appointment, n.store_medication AS store_medication
+    """
+
     try:
         result = kg.graph.query(query)
+        check_result = kg.graph.query(check_query)
         if result:
             record = result[0]
-            if record.get("medications"):
-                state.entities["dosage"] = record.get("dosages", state.entities.get("dosage"))
-                state.entities["frequency"] = record.get("frequencies", state.entities.get("frequency"))
+            check_record = check_result[0]
+            if check_record['store_medication'] and record.get("medications"):
+                state.entities["dosage"] = record.get("dosages", '')
+                state.entities["frequency"] = record.get("frequencies", '')
                 entities_input = f'The patient is taking medications: {record.get("medications")} with dosages: {record.get("dosages")} and frequencies: {record.get("frequencies")}'
                 response = get_bot_response_based_on_entities(entities_input, state.patient)
-            elif record.get("appointments"):
-                requested_time = record.get("appointments")
-                # requested_time or requested_time['time']
+            elif check_record['store_appointment'] and record.get("appointment_time"):
+                requested_time = record.get("appointment_time")[-1]
                 requested_time = requested_time['time'] if isinstance(requested_time, dict) else requested_time
                 # Create an AppointmentRequest
                 AppointmentRequest.objects.create(
